@@ -10,7 +10,8 @@ import ldap
 import configobj
 import pprint
 import urllib
-import json
+#import json
+import simplejson
 import memcache
 import logging
 import itertools
@@ -29,7 +30,7 @@ class LDAPDirectory (object):
 
     def __init__ (self, uris,
             basedn='',
-            scope=ldap.SCOPE_SUBTREE,
+            scope=ldap.SCOPE_BASE,
             debug=False,
             maxwait=120,
             ):
@@ -44,7 +45,8 @@ class LDAPDirectory (object):
         self.connect()
 
     def connect(self):
-        uri = self.uris.next()
+        #uri = self.uris.next()
+        uri = next(self.uris)
         logging.info('Connecting to %s' % uri)
         self.dir    = ldap.initialize(uri)
 
@@ -128,22 +130,24 @@ def ldapsearch():
     if '_' in request.GET:
         del request.GET['_']
 
-    key = urllib.quote('/ldap/%s/%s' % (
+    key = urllib.parse.quote('/ldap/%s/%s' % (
             directory.basedn,
             request.urlparts.query,
             ))
 
-    res = cache.get(key)
+    #res = cache.get(key)
+    res = None
 
     if res is None:
         res = directory.search(**request.GET)
-        cache.set(key, res)
+        #cache.set(key, res)
 
     if not res:
         raise HTTPError(404)
 
     response.content_type = 'application/json'
-    text = json.dumps(res, indent=2)
+    print(res)
+    text = simplejson.dumps(res, indent=2)
 
     # wrap JSON data in function call for JSON responses.
     if callback:
@@ -169,7 +173,7 @@ def init_memcache():
     lifetime = config.get('memcache', {}).get('lifetime', 600)
 
     # Make sure we have a Python list of servers.
-    if isinstance(servers, (str, unicode)):
+    if isinstance(servers, str):
         servers = [servers]
 
     # Make sure we have an integer.
@@ -192,7 +196,7 @@ def init_directory():
     basedn = config.get('ldap', {}).get( 'basedn', '')
     
     # Make sure we have a list of uris.
-    if isinstance(uris, (str, unicode)):
+    if isinstance(uris, str):
         uris = [uris]
 
     directory = LDAPDirectory(
@@ -225,7 +229,7 @@ def main():
         print >>sys.stderr, 'CONFIG:', pprint.pformat(dict(config))
 
     init_logging()
-    init_memcache()
+    #init_memcache()
     init_directory()
 
     run(
