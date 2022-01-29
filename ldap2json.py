@@ -146,7 +146,7 @@ def ldapsearch():
         raise HTTPError(404)
 
     response.content_type = 'application/json'
-    print(res)
+    #print(res)
     text = simplejson.dumps(res, indent=2)
 
     # wrap JSON data in function call for JSON responses.
